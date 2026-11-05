@@ -875,6 +875,12 @@ class BaseEncoder(BaseEstimator):
         """
         for position, dtype in enumerate(self.feature_dtypes_in_):
             column = df.columns[position]
+            if isinstance(dtype, CategoricalDtype) and (
+                df[column].notna() & ~df[column].isin(dtype.categories)
+            ).any(axis=None):
+                # Casting to the fitted categories would erase unseen values as NaN,
+                # bypassing handle_unknown and corrupting passthrough columns.
+                dtype = object
             if is_object_dtype(dtype) or isinstance(dtype, CategoricalDtype):
                 df[column] = df[column].astype(dtype)
         return df
